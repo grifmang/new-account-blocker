@@ -1,10 +1,10 @@
 # New Account Blocker — Chrome Extension Design Spec
 
-A Chrome extension that hides posts and replies from recently created Twitter/X accounts by intercepting Twitter's internal API responses and applying CSS-based hiding with collapsible reveal bars.
+A Chrome extension that hides posts and replies from recently created Twitter/X accounts and/or blue-check (Twitter Blue / X Premium) verified accounts by intercepting Twitter's internal API responses and applying CSS-based hiding with collapsible reveal bars.
 
 ## Problem
 
-Brand new accounts have become a plague on Twitter/X — spam, bots, and low-quality engagement from accounts created in the past few months to years. Twitter's API is too expensive to use for filtering, so this extension works entirely client-side by intercepting data Twitter already fetches.
+Brand new accounts have become a plague on Twitter/X — spam, bots, and low-quality engagement from accounts created in the past few months to years. Additionally, some users are frustrated by new accounts purchasing blue checkmarks (Twitter Blue / X Premium) to gain visibility in replies. Twitter's API is too expensive to use for filtering, so this extension works entirely client-side by intercepting data Twitter already fetches.
 
 ## Architecture
 
@@ -19,9 +19,10 @@ Runs in Twitter's page context (not the content script's isolated world). Inject
 - Targets URLs matching Twitter's API patterns: `/i/api/graphql/*`, `/i/api/2/*`
 - Clones responses before reading (so Twitter's own code is unaffected)
 - Recursively walks response JSON to find user objects — any object containing both `screen_name` and `created_at` fields
+- Also extracts `is_blue_verified` from user objects to identify paid blue-check accounts
 - For each user found, posts a message to the content script via `window.postMessage`:
   ```js
-  { type: 'NEW_ACCOUNT_BLOCKER_USER', screen_name, created_at, user_id }
+  { type: 'NEW_ACCOUNT_BLOCKER_USER', screen_name, created_at, user_id, is_blue_verified }
   ```
 
 ### 2. Content Script (`content.js`)
@@ -31,12 +32,13 @@ The coordinator between the page script, the DOM, and the service worker. Runs i
 **Responsibilities:**
 - Injects `injected.js` into the page context on load
 - Listens for `window.postMessage` events from the injected script
-- Maintains an in-memory user cache: `Map<string, { createdAt: Date, following: boolean }>` mapping usernames to their account creation date and follow status
+- Maintains an in-memory user cache: `Map<string, { createdAt: Date, following: boolean, isBlueVerified: boolean }>` mapping usernames to their account creation date, follow status, and blue-check status
 - Uses a `MutationObserver` to detect new tweet elements added to the DOM
 - For each new tweet element:
   - Extracts the `@handle` from the tweet's DOM structure
   - Looks up the handle in the user cache
   - If the account is younger than the configured threshold AND not on the allowlist, applies hiding
+  - If the blue-check filter is enabled AND the user is blue-verified AND not on the allowlist, applies hiding
 - After receiving a batch of new user data, re-scans currently visible tweets (handles the race condition where tweets render before their author data arrives)
 - Communicates with the service worker via `chrome.runtime.sendMessage` for:
   - Reading/writing settings (threshold, enabled state, allowlist)
@@ -51,6 +53,7 @@ Manages persistent state and the extension badge.
 - Stores all settings in `chrome.storage.local`:
   - `enabled` (boolean, default: `true`) — global on/off toggle
   - `thresholdMonths` (number, default: `24`) — account age threshold in months
+  - `hideBlueChecks` (boolean, default: `false`) — hide posts from blue-check verified accounts
   - `allowlist` (string[]) — manually allowed usernames
   - `totalFiltered` (number) — lifetime hidden post counter
 - Updates the extension badge count per tab when the content script reports hidden posts
@@ -64,6 +67,7 @@ HTML/CSS/JS popup shown when clicking the extension icon.
 - On/off toggle in the header
 - Stats section: hidden count for the current page + total lifetime filtered count
 - Age threshold slider with preset stops: 1 month, 3 months, 6 months, 1 year, 2 years, 3 years, 5 years
+- Blue check filter toggle (off by default) — independent from the age filter; when enabled, hides all posts from blue-check verified accounts
 - Link to allowlist management
 
 **Allowlist view:**
@@ -75,16 +79,21 @@ HTML/CSS/JS popup shown when clicking the extension icon.
 
 ## Tweet Hiding Behavior
 
-When a tweet is identified as belonging to a new account:
+When a tweet is identified as belonging to a new account or a blue-check account (depending on which filters are active):
 
 1. The original tweet element gets `display: none`
 2. A **collapse bar** is inserted before it in the DOM
 3. The collapse bar shows:
    - An info icon
-   - Text: "Post hidden — account created [Month Year] ([N] months/years old)"
+   - Text varies by reason:
+     - Age filter: "Post hidden — account created [Month Year] ([N] months/years old)"
+     - Blue check filter: "Post hidden — blue-check verified account"
+     - Both filters match: "Post hidden — blue-check account created [Month Year] ([N] months/years old)"
    - **Show** button — temporarily reveals the tweet for the current session by toggling `display` on the original element. Re-collapses on page reload.
    - **Allow user** button — permanently adds the username to the allowlist in `chrome.storage.local` and immediately reveals all their posts across the page.
 4. The collapse bar uses Twitter's dark theme styling (`#16181c` background, `#71767b` text) to blend into the feed
+
+A tweet is hidden if it matches **any** active filter (OR logic). The allowlist overrides all filters — an allowlisted user is never hidden regardless of account age or verification status.
 
 ## Scope
 
@@ -113,10 +122,10 @@ Response JSON contains nested user objects with a `legacy` field that includes `
 1. Twitter's frontend makes an API request (e.g., loading the timeline)
 2. The injected page script intercepts the response via the patched `fetch()`
 3. The script clones the response, parses the JSON, and walks the object tree
-4. For each user object found (has both `screen_name` and `created_at`), it posts the data to the content script
+4. For each user object found (has both `screen_name` and `created_at`), it posts the data (including `is_blue_verified`) to the content script
 5. The content script adds the user to its in-memory cache
 6. When the MutationObserver fires (new tweet nodes in the DOM), the content script checks each tweet's author against the cache
-7. If the account age is below the threshold and not allowlisted, the tweet is collapsed
+7. If the account matches any active filter (age below threshold, or blue-check verified) and is not allowlisted, the tweet is collapsed
 8. After each batch of new user data, a re-scan of visible tweets handles the race condition where tweets rendered before their author data arrived
 9. The content script reports the hidden count to the service worker, which updates the badge
 
@@ -124,8 +133,8 @@ Response JSON contains nested user objects with a `legacy` field that includes `
 
 Two types of allowlisting:
 
-1. **Auto-allowlist (followed accounts):** Twitter's API responses include follow status for users. If the logged-in user follows an account, it is never hidden regardless of age. This is derived from API response data, not stored separately.
-2. **Manual allowlist:** Users can click "Allow user" on any collapse bar. The username is saved to `chrome.storage.local` and persists across sessions. Can be managed (removed) from the popup's allowlist view.
+1. **Auto-allowlist (followed accounts):** Twitter's API responses include follow status for users. If the logged-in user follows an account, it is never hidden regardless of age or verification status. This is derived from API response data, not stored separately.
+2. **Manual allowlist:** Users can click "Allow user" on any collapse bar. The username is saved to `chrome.storage.local` and persists across sessions. Can be managed (removed) from the popup's allowlist view. Overrides both the age filter and the blue-check filter.
 
 ## Manifest V3 Configuration
 
