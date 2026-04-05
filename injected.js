@@ -57,7 +57,7 @@
         user_id: users[i].user_id,
         is_blue_verified: users[i].is_blue_verified,
         following: users[i].following
-      }, '*');
+      }, window.location.origin);
     }
   }
 

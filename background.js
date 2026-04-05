@@ -21,18 +21,34 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   }
 
   if (message.type === 'SET_SETTINGS') {
-    chrome.storage.local.set(message.settings, function () {
-      broadcastToTwitterTabs({ type: 'SETTINGS_UPDATED', settings: message.settings });
+    var allowed = {};
+    var s = message.settings;
+    if (s && typeof s.enabled === 'boolean') allowed.enabled = s.enabled;
+    if (s && typeof s.thresholdMonths === 'number' && [1, 3, 6, 12, 24, 36, 60].indexOf(s.thresholdMonths) !== -1) {
+      allowed.thresholdMonths = s.thresholdMonths;
+    }
+    if (s && typeof s.hideBlueChecks === 'boolean') allowed.hideBlueChecks = s.hideBlueChecks;
+    if (Object.keys(allowed).length === 0) {
+      sendResponse({ ok: false });
+      return true;
+    }
+    chrome.storage.local.set(allowed, function () {
+      broadcastToTwitterTabs({ type: 'SETTINGS_UPDATED', settings: allowed });
       sendResponse({ ok: true });
     });
     return true;
   }
 
   if (message.type === 'ADD_TO_ALLOWLIST') {
+    var username = message.username;
+    if (typeof username !== 'string' || username.length === 0 || username.length > 30 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      sendResponse({ ok: false });
+      return true;
+    }
     chrome.storage.local.get({ allowlist: [] }, function (data) {
       var list = data.allowlist;
-      if (list.indexOf(message.username) === -1) {
-        list.push(message.username);
+      if (list.indexOf(username) === -1) {
+        list.push(username);
         chrome.storage.local.set({ allowlist: list }, function () {
           broadcastToTwitterTabs({ type: 'SETTINGS_UPDATED', settings: { allowlist: list } });
           sendResponse({ ok: true });
@@ -45,8 +61,13 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   }
 
   if (message.type === 'REMOVE_FROM_ALLOWLIST') {
+    var username = message.username;
+    if (typeof username !== 'string' || username.length === 0 || username.length > 30 || !/^[a-zA-Z0-9_]+$/.test(username)) {
+      sendResponse({ ok: false });
+      return true;
+    }
     chrome.storage.local.get({ allowlist: [] }, function (data) {
-      var list = data.allowlist.filter(function (u) { return u !== message.username; });
+      var list = data.allowlist.filter(function (u) { return u !== username; });
       chrome.storage.local.set({ allowlist: list }, function () {
         broadcastToTwitterTabs({ type: 'SETTINGS_UPDATED', settings: { allowlist: list } });
         sendResponse({ ok: true });
@@ -68,8 +89,10 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   }
 
   if (message.type === 'INCREMENT_TOTAL_FILTERED') {
+    var count = parseInt(message.count, 10);
+    if (isNaN(count) || count < 0 || count > 100) return false;
     chrome.storage.local.get({ totalFiltered: 0 }, function (data) {
-      chrome.storage.local.set({ totalFiltered: data.totalFiltered + message.count });
+      chrome.storage.local.set({ totalFiltered: data.totalFiltered + count });
     });
     return false;
   }

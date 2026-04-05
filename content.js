@@ -63,14 +63,20 @@
   // --- Listen for user data from injected script ---
   window.addEventListener('message', function (event) {
     if (event.source !== window) return;
+    if (event.origin !== 'https://x.com' && event.origin !== 'https://twitter.com') return;
     if (!event.data || event.data.type !== 'NEW_ACCOUNT_BLOCKER_USER') return;
 
     var d = event.data;
+    if (typeof d.screen_name !== 'string' || d.screen_name.length === 0 || d.screen_name.length > 30) return;
+    if (typeof d.created_at !== 'string') return;
+    var parsedDate = new Date(d.created_at);
+    if (isNaN(parsedDate.getTime())) return;
+
     var username = d.screen_name.toLowerCase();
     userCache[username] = {
-      createdAt: new Date(d.created_at),
-      isBlueVerified: d.is_blue_verified,
-      following: d.following
+      createdAt: parsedDate,
+      isBlueVerified: Boolean(d.is_blue_verified),
+      following: Boolean(d.following)
     };
 
     rescanVisibleTweets();
@@ -113,11 +119,11 @@
     var isBlueCheck = settings.hideBlueChecks && userData.isBlueVerified;
 
     if (isBlueCheck && isNewAccount) {
-      return 'Post hidden \u2014 blue-check account created <span style="color: #f4900c;">' + dateStr + '</span> (' + ageStr + ')';
+      return 'Post hidden \u2014 blue-check account created ' + dateStr + ' (' + ageStr + ')';
     } else if (isBlueCheck) {
       return 'Post hidden \u2014 blue-check verified account';
     } else {
-      return 'Post hidden \u2014 account created <span style="color: #f4900c;">' + dateStr + '</span> (' + ageStr + ')';
+      return 'Post hidden \u2014 account created ' + dateStr + ' (' + ageStr + ')';
     }
   }
 
@@ -163,26 +169,51 @@
     bar.setAttribute('data-nab-username', username);
     bar.style.cssText = 'padding:8px 16px;background:#16181c;border-bottom:1px solid #2f3336;display:flex;align-items:center;gap:10px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
 
-    var text = formatCollapseBarText(userData);
+    // Build collapse bar content safely using DOM (no innerHTML with data-derived values)
+    var leftDiv = document.createElement('div');
+    leftDiv.style.cssText = 'display:flex;align-items:center;gap:6px;';
 
-    bar.innerHTML =
-      '<div style="display:flex;align-items:center;gap:6px;">' +
-        '<svg width="16" height="16" viewBox="0 0 16 16" fill="#71767b"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 12.5a5.5 5.5 0 110-11 5.5 5.5 0 010 11zm-.75-8.25v3.5h1.5v-3.5h-1.5zm0 4.5v1.5h1.5v-1.5h-1.5z"/></svg>' +
-        '<span style="color:#71767b;font-size:13px;">' + text + '</span>' +
-      '</div>' +
-      '<div style="margin-left:auto;display:flex;gap:8px;align-items:center;">' +
-        '<span class="nab-show-btn" style="color:#1d9bf0;font-size:12px;padding:4px 10px;border:1px solid rgba(29,155,240,0.2);border-radius:9999px;cursor:pointer;">Show</span>' +
-        '<span class="nab-allow-btn" style="color:#059669;font-size:12px;padding:4px 10px;border:1px solid rgba(5,150,105,0.2);border-radius:9999px;cursor:pointer;">Allow user</span>' +
-      '</div>';
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '16');
+    svg.setAttribute('height', '16');
+    svg.setAttribute('viewBox', '0 0 16 16');
+    svg.setAttribute('fill', '#71767b');
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M8 1a7 7 0 100 14A7 7 0 008 1zm0 12.5a5.5 5.5 0 110-11 5.5 5.5 0 010 11zm-.75-8.25v3.5h1.5v-3.5h-1.5zm0 4.5v1.5h1.5v-1.5h-1.5z');
+    svg.appendChild(path);
+    leftDiv.appendChild(svg);
 
-    bar.querySelector('.nab-show-btn').addEventListener('click', function (e) {
+    var textSpan = document.createElement('span');
+    textSpan.style.cssText = 'color:#71767b;font-size:13px;';
+    textSpan.textContent = formatCollapseBarText(userData);
+    leftDiv.appendChild(textSpan);
+
+    var rightDiv = document.createElement('div');
+    rightDiv.style.cssText = 'margin-left:auto;display:flex;gap:8px;align-items:center;';
+
+    var showBtn = document.createElement('span');
+    showBtn.className = 'nab-show-btn';
+    showBtn.style.cssText = 'color:#1d9bf0;font-size:12px;padding:4px 10px;border:1px solid rgba(29,155,240,0.2);border-radius:9999px;cursor:pointer;';
+    showBtn.textContent = 'Show';
+    rightDiv.appendChild(showBtn);
+
+    var allowBtn = document.createElement('span');
+    allowBtn.className = 'nab-allow-btn';
+    allowBtn.style.cssText = 'color:#059669;font-size:12px;padding:4px 10px;border:1px solid rgba(5,150,105,0.2);border-radius:9999px;cursor:pointer;';
+    allowBtn.textContent = 'Allow user';
+    rightDiv.appendChild(allowBtn);
+
+    bar.appendChild(leftDiv);
+    bar.appendChild(rightDiv);
+
+    showBtn.addEventListener('click', function (e) {
       e.stopPropagation();
       tweetEl.style.display = '';
       bar.style.display = 'none';
       sessionRevealed[username] = true;
     });
 
-    bar.querySelector('.nab-allow-btn').addEventListener('click', function (e) {
+    allowBtn.addEventListener('click', function (e) {
       e.stopPropagation();
       chrome.runtime.sendMessage({ type: 'ADD_TO_ALLOWLIST', username: username });
       settings.allowlist.push(username);
@@ -220,7 +251,7 @@
   }
 
   function revealAllPostsByUser(username) {
-    var bars = document.querySelectorAll('.nab-collapse-bar[data-nab-username="' + username + '"]');
+    var bars = document.querySelectorAll('.nab-collapse-bar[data-nab-username="' + CSS.escape(username) + '"]');
     for (var i = 0; i < bars.length; i++) {
       var tweet = bars[i].nextElementSibling;
       if (tweet && tweet.getAttribute('data-nab-hidden')) {
