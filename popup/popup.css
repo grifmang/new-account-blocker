@@ -1,1 +1,269 @@
-/* Popup styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 320px;
+  background: #15202b;
+  color: #e7e9ea;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+}
+
+header {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2f3336;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+h1 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.toggle.small {
+  width: 36px;
+  height: 20px;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #333;
+  border-radius: 12px;
+  transition: background 0.2s;
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle.small .toggle-slider::before {
+  height: 16px;
+  width: 16px;
+}
+
+.toggle input:checked + .toggle-slider {
+  background: #1d9bf0;
+}
+
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(20px);
+}
+
+.toggle.small input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+}
+
+.stats {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2f3336;
+  display: flex;
+  justify-content: space-between;
+}
+
+.stat-label {
+  color: #71767b;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f4900c;
+  margin-top: 2px;
+}
+
+.stat-value.secondary {
+  color: #71767b;
+}
+
+.stat:last-child {
+  text-align: right;
+}
+
+.setting {
+  padding: 14px 16px;
+  border-bottom: 1px solid #2f3336;
+}
+
+.setting.inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.setting-value {
+  color: #1d9bf0;
+  font-weight: 700;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #1d9bf0;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  color: #71767b;
+  font-size: 11px;
+}
+
+.allowlist-link {
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  border-bottom: 1px solid #2f3336;
+}
+
+.allowlist-link:hover {
+  background: #1c2938;
+}
+
+.link-title {
+  font-size: 14px;
+}
+
+.link-subtitle {
+  color: #71767b;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.arrow {
+  color: #1d9bf0;
+  font-size: 16px;
+}
+
+.back {
+  color: #1d9bf0;
+  font-size: 18px;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+.allowlist-section-label {
+  padding: 10px 16px 6px;
+  color: #71767b;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.allowlist-item {
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #2f3336;
+}
+
+.allowlist-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #1d9bf0;
+  flex-shrink: 0;
+}
+
+.allowlist-info {
+  flex: 1;
+}
+
+.allowlist-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.allowlist-handle {
+  font-size: 12px;
+  color: #71767b;
+}
+
+.allowlist-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.allowlist-badge.following {
+  color: #059669;
+  background: rgba(5, 150, 105, 0.13);
+}
+
+.allowlist-badge.remove {
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  cursor: pointer;
+}
+
+.allowlist-badge.remove:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.tip {
+  padding: 16px;
+  color: #71767b;
+  font-size: 12px;
+  text-align: center;
+}
+
+.empty-state {
+  padding: 24px 16px;
+  color: #71767b;
+  font-size: 13px;
+  text-align: center;
+}

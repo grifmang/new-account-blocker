@@ -1,1 +1,67 @@
-<!DOCTYPE html><html><body><p>Popup</p></body></html>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="main-view">
+    <header>
+      <h1>New Account Blocker</h1>
+      <label class="toggle">
+        <input type="checkbox" id="enabled-toggle" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </header>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Hidden on this page</div>
+        <div class="stat-value" id="page-count">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Total filtered</div>
+        <div class="stat-value secondary" id="total-count">0</div>
+      </div>
+    </div>
+
+    <div class="setting">
+      <div class="setting-header">
+        <span>Account age threshold</span>
+        <span class="setting-value" id="threshold-label">2 yr</span>
+      </div>
+      <input type="range" id="threshold-slider" min="0" max="6" value="4" step="1">
+      <div class="slider-labels">
+        <span>1 mo</span><span>3 mo</span><span>6 mo</span><span>1 yr</span><span>2 yr</span><span>3 yr</span><span>5 yr</span>
+      </div>
+    </div>
+
+    <div class="setting inline">
+      <span>Hide blue-check accounts</span>
+      <label class="toggle small">
+        <input type="checkbox" id="blue-check-toggle">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="allowlist-link" id="manage-allowlist">
+      <div>
+        <div class="link-title">Allowed accounts</div>
+        <div class="link-subtitle" id="allowlist-count">0 users on your allowlist</div>
+      </div>
+      <span class="arrow">&rarr;</span>
+    </div>
+  </div>
+
+  <div id="allowlist-view" style="display:none;">
+    <header>
+      <span id="back-btn" class="back">&larr;</span>
+      <h1>Allowed Accounts</h1>
+    </header>
+    <div id="allowlist-content"></div>
+    <div class="tip">Tip: Click "Allow user" on any hidden post to add them here</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
