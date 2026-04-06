@@ -9,6 +9,13 @@
 </p>
 
 <p align="center">
+  <a href="https://chromewebstore.google.com/detail/new-account-blocker/nghbihognhjnmglpiembanbdeegbmcje"><img src="https://img.shields.io/chrome-web-store/v/nghbihognhjnmglpiembanbdeegbmcje?style=flat&logo=googlechrome&logoColor=white&label=Chrome%20Web%20Store&color=4285F4" alt="Chrome Web Store"></a>
+  <a href="https://chromewebstore.google.com/detail/new-account-blocker/nghbihognhjnmglpiembanbdeegbmcje"><img src="https://img.shields.io/chrome-web-store/users/nghbihognhjnmglpiembanbdeegbmcje?style=flat&logo=googlechrome&logoColor=white&label=Users&color=4285F4" alt="Chrome Web Store Users"></a>
+  <a href="https://chromewebstore.google.com/detail/new-account-blocker/nghbihognhjnmglpiembanbdeegbmcje"><img src="https://img.shields.io/chrome-web-store/rating/nghbihognhjnmglpiembanbdeegbmcje?style=flat&logo=googlechrome&logoColor=white&label=Rating&color=4285F4" alt="Chrome Web Store Rating"></a>
+  <a href="https://github.com/grifmang/new-account-blocker/blob/master/LICENSE"><img src="https://img.shields.io/github/license/grifmang/new-account-blocker?style=flat" alt="License"></a>
+</p>
+
+<p align="center">
   <a href="#features">Features</a> &middot;
   <a href="#installation">Installation</a> &middot;
   <a href="#how-it-works">How It Works</a> &middot;
@@ -32,7 +39,7 @@
 
 ### From the Store
 
-- **Chrome Web Store** — *Coming soon*
+- **[Chrome Web Store](https://chromewebstore.google.com/detail/new-account-blocker/nghbihognhjnmglpiembanbdeegbmcje)** — Install for Chrome, Brave, Arc, Opera, Vivaldi
 - **Edge Add-ons** — *Coming soon*
 
 ### Manual Install (Developer Mode)
